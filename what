@@ -26,9 +26,11 @@ halp () {
 }
 
 # Create a dtb.img from the kernel source path previously defined with -s.
+# If the source is not defined, exit.
 # Hide dtbTool output except if an error occurs.
 # Error out if the image is not created and show dtbTool error.
 dtb () {
+  [ ! -f config/s.kernelsource_path.txt] && echo "!!! Kernel source path not defined !!!" && exit 1
   source_path="$(cat config/s.kernelsource_path.txt)"
   echo "  Kernel source set! Looking for dtb files in $source_path " >&2
   ./tools/dtbToolCM -2 -o tools/dt.img -s 2048 -p $source_path/scripts/dtc/ $source_path/arch/arm/boot/ >config/dtblog.txt
@@ -56,6 +58,7 @@ permissive () {
 # Make the boot image(s)
 bootimg () {
   # Check if the zImage path is specified. If not, default to look into kernel source path.
+  # If still undefined, exit.
   if [ -f config/k.zImage_path.txt ]; then
     source_path="$(cat config/k.zImage_path.txt)"
   elif [ -f config/s.kernelsource_path.txt ]; then
@@ -63,6 +66,7 @@ bootimg () {
   else echo "Path to zImage not defined!"
     exit 1
   fi
+  # See which bootimg should be built and run the mkbootimg command accordingly.
   if [ -f config/permissive ] && [ ! -f config/enforcing ]; then
     bootimgper
   elif [ -f config/enforcing ] && [ ! -f config/permissive ]; then
@@ -72,6 +76,8 @@ bootimg () {
   fi
 }
 
+# Functions that run the mkbootimg tool. Use $source_path defined in bootimg.
+# Once the command is sent, check if the images are in place. If not, error out.
 bootimgper () {
   ./tools/mkbootimg --base 0x00000000 --kernel $source_path \
 --ramdisk_offset 0x02000000 --tags_offset 0x01E00000 --pagesize 2048 --cmdline \
