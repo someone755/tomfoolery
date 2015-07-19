@@ -1,0 +1,176 @@
+#!/bin/bash
+# Clean after a previous run of the script
+# Do NOT delete the configuration files in config!
+rm -rf tools/dt.img
+rm -rf .log.txt
+rm -rf rper.img
+rm -rf renf.img
+rm -rf rper.zip
+rm -rf renf.zip
+[ ! -d config ] && mkdir config
+
+# Help message to be shown on -h
+halp () {
+  echo "    options:"
+  echo "	-h 	  -- display this help message"
+  echo "	-k [path] -- set zImage path. If not defined, values from -s are"
+  echo "		     used."
+  echo "	-r	  -- remove all configuration files and start anew"
+  echo "	-s [path] -- set kernel source path to be used to look for dtb files"
+  echo "	-p, -e	  -- create permissive or enforcing image. By default, both"
+  echo "		     are created."
+  echo "	-z	  -- create flashable zip file from the boot image(s) created"
+  echo " "
+  echo "	Defaults are -p, -e, and -z."
+  echo "	Configuration files can be found in .config/"
+}
+
+# Create a dtb.img from the kernel source path previously defined with -s.
+# Hide dtbTool output except if an error occurs.
+# Error out if the image is not created and show dtbTool error.
+dtb () {
+  source_path="$(cat config/s.kernelsource_path.txt)"
+  echo "  Kernel source set! Looking for dtb files in $source_path " >&2
+  ./tools/dtbToolCM -2 -o tools/dt.img -s 2048 -p $source_path/scripts/dtc/ $source_path/arch/arm/boot/ >config/dtblog.txt
+  if [ -f tools/dt.img ]; then
+    echo "  DTB successfully generated"
+  else
+    cat config/dtblog.txt
+    exit 1
+  fi
+# An option to delete the temporary log
+# file. This is not really needed since it is
+# ignored by git, and some people might want to know
+# dtbtool's output.
+# rm -rf config/dtblog.txt
+}
+
+# Two small functions to set which image(s) to make.
+enforcing () {
+  touch config/enforcing
+}
+permissive () {
+  touch config/permissive
+}
+
+# Make the boot image(s)
+bootimg () {
+  # Check if the zImage path is specified. If not, default to look into kernel source path.
+  if [ -f config/k.zImage_path.txt ]; then
+    source_path="$(cat config/k.zImage_path.txt)"
+  elif [ -f config/s.kernelsource_path.txt ]; then
+      source_path="$(cat config/s.kernelsource_path.txt)/arch/arm/boot/zImage"
+  else echo "Path to zImage not defined!"
+    exit 1
+  fi
+  if [ -f config/permissive ] && [ ! -f config/enforcing ]; then
+    bootimgper
+  elif [ -f config/enforcing ] && [ ! -f config/permissive ]; then
+    bootimgenf
+  elif [ ! -f config/permissive ] && [ ! -f config/enforcing ]; then
+    bootimgenf && bootimgper
+  fi
+}
+
+bootimgper () {
+  ./tools/mkbootimg --base 0x00000000 --kernel $source_path \
+--ramdisk_offset 0x02000000 --tags_offset 0x01E00000 --pagesize 2048 --cmdline \
+"androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x3b7 ehci-hcd.park=3 androidboot.bootdevice=msm_sdcc.1 vmalloc=300M dwc3.maximum_speed=high dwc3_msm.prop_chg_detect=Y androidboot.selinux=permissive" \
+--ramdisk ramdisk_z3c/ramdisk.cpio.gz --dt tools/dt.img -o rper.img
+if [ -f rper.img ]; then
+echo "  Permissive boot image created successfully"
+else
+echo "!!! Error creating permissive boot image, refer to the error !!!"
+exit 1
+fi
+}
+bootimgenf () {
+  ./tools/mkbootimg --base 0x00000000 --kernel $source_path \
+--ramdisk_offset 0x02000000 --tags_offset 0x01E00000 --pagesize 2048 --cmdline \
+"androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x3b7 ehci-hcd.park=3 androidboot.bootdevice=msm_sdcc.1 vmalloc=300M dwc3.maximum_speed=high dwc3_msm.prop_chg_detect=Y" \
+--ramdisk ramdisk_z3c/ramdisk.cpio.gz --dt tools/dt.img -o renf.img
+if [ -f renf.img ]; then
+echo "  Enforcing boot image created successfully"
+else
+echo "!!! Error creating enforcing boot image, refer to the error !!!"
+exit 1
+fi
+}
+
+# Zip the boot image into a flashable zip, according to the -p and -e flags.
+zips () {
+  cp tools/base.zip tools/1.zip #&>/dev/null
+  if [ ! -f config/enforcing ]; then
+    cp rper.img tools/boot.img #&>/dev/null
+    zip -mqj tools/1.zip tools/boot.img && cp tools/1.zip rper.zip #&>/dev/null
+  fi
+  if [ ! -f config/permissive ]; then
+    cp renf.img tools/boot.img #&>/dev/null
+    zip -mqj tools/1.zip tools/boot.img && cp tools/1.zip renf.zip #&>/dev/null
+  fi
+  rm -rf tools/1.zip #&>/dev/null
+  rm -rf config/enforcing && rm -rf config/permissive
+  if [ -f renf.zip ] || [ -f r.zip ]; then
+    echo "  Zip files created successfully"
+else
+    echo "!!! Error creating zip files !!!"
+    exit 1
+fi
+}
+
+# Removal script to be run on -r
+remove () {
+  rm -rf config/
+  echo "  Configuration files removed"
+}
+
+# Check for flags passed
+while getopts ":hrepk:s:z" opt; do
+  case $opt in
+    e)
+      echo "  Enforcing image selected"
+      enforcing
+      ;;
+    h)
+      # Show a help message and quit
+      halp
+      exit 0
+      ;;
+    k)
+      # Set zImage location (not necessary, overrides -s option)
+      OPTARG="${OPTARG%/}"
+      touch config/k.zImage_path.txt && echo $OPTARG >config/k.zImage_path.txt
+      ;;
+    p)
+      echo "  Permissive image selected"
+      permissive
+      ;;
+    r)
+      remove
+      ;;
+    s)
+      # Set kernel source to be used when running dtbTool
+      OPTARG="${OPTARG%/}"
+      touch config/s.kernelsource_path.txt && echo $OPTARG >config/s.kernelsource_path.txt
+      ;;
+    z)
+      zips
+      ;;
+    \?)
+      echo "!!! Invalid option: -$OPTARG !!!" >&2
+      exit 1
+      ;;
+    :)
+      echo "!!! Option -$OPTARG requires an argument. !!!" >&2
+      exit 1
+      ;;
+
+  esac
+done
+
+# Finally, with all the options set, create the boot image(s) and their zips.
+if [ -d config ]; then
+  dtb
+  bootimg
+  zips
+fi

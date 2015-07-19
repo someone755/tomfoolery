@@ -1,0 +1,8 @@
+config/
+*.img
+.*
+*~
+*.zip
+
+!.gitignore
+!base.zip
