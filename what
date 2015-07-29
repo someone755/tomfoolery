@@ -7,6 +7,7 @@ rm -rf rper.img
 rm -rf renf.img
 rm -rf rper.zip
 rm -rf renf.zip
+rm -rf extract
 [ ! -d config ] && mkdir config
 
 # Help message to be shown on -h
@@ -108,6 +109,8 @@ fi
 
 # Zip the boot image into a flashable zip.
 zips () {
+  mkdir extract
+  mkdir extract/res
   cp tools/base.zip tools/1.zip #&>/dev/null
   cp tools/dt.img extract/res/dt.img
   cp $source_path extract/res/zImage
