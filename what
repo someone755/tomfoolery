@@ -19,7 +19,10 @@ halp () {
   echo "	-s [path] -- set kernel source path to be used to look for dtb files"
   echo "	-p, -e	  -- create permissive or enforcing image. By default, both"
   echo "		     are created."
-  echo "	-z	  -- create flashable zip file from the boot image(s) created"
+  echo "	-z	  -- create flashable zip file from the zImage and dt.img."
+  echo "		     The created zips allow the user to choose whether they"
+  echo "		     want a permissive of enforcing image at the time of"
+  echo "		     install, and use the native ROM's ramdisk."
   echo " "
   echo "	Defaults are -p, -e, and -z."
   echo "	Configuration files can be found in .config/"
@@ -103,23 +106,19 @@ exit 1
 fi
 }
 
-# Zip the boot image into a flashable zip, according to the -p and -e flags.
+# Zip the boot image into a flashable zip.
 zips () {
   cp tools/base.zip tools/1.zip #&>/dev/null
-  if [ ! -f config/enforcing ]; then
-    cp rper.img tools/boot.img #&>/dev/null
-    zip -mqj tools/1.zip tools/boot.img && cp tools/1.zip rper.zip #&>/dev/null
-  fi
-  if [ ! -f config/permissive ]; then
-    cp renf.img tools/boot.img #&>/dev/null
-    zip -mqj tools/1.zip tools/boot.img && cp tools/1.zip renf.zip #&>/dev/null
-  fi
+  cp tools/dt.img extract/res/dt.img
+  cp $source_path/arch/arm/boot/zImage extract/res/zImage
+  zip -qg tools/1.zip extract/res/*
+  cp tools/1.zip r.zip
   rm -rf tools/1.zip #&>/dev/null
   rm -rf config/enforcing && rm -rf config/permissive
-  if [ -f renf.zip ] || [ -f r.zip ]; then
-    echo "  Zip files created successfully"
+  if [ -f r.zip ]; then
+    echo "  Zip file created successfully"
 else
-    echo "!!! Error creating zip files !!!"
+    echo "!!! Error creating zip file !!!"
     exit 1
 fi
 }
