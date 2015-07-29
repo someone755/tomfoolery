@@ -3,6 +3,7 @@ config/
 .*
 *~
 *.zip
+zImage
 
 !.gitignore
 !base.zip
