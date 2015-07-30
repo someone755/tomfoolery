@@ -7,7 +7,6 @@ rm -rf rper.img
 rm -rf renf.img
 rm -rf rper.zip
 rm -rf renf.zip
-rm -rf extract
 [ ! -d config ] && mkdir config
 
 # Help message to be shown on -h
@@ -34,7 +33,7 @@ halp () {
 # Hide dtbTool output except if an error occurs.
 # Error out if the image is not created and show dtbTool error.
 dtb () {
-  [ ! -f config/s.kernelsource_path.txt] && echo "!!! Kernel source path not defined !!!" && exit 1
+  [ ! -f config/s.kernelsource_path.txt ] && echo "!!! Kernel source path not defined !!!" && exit 1
   source_path="$(cat config/s.kernelsource_path.txt)"
   echo "  Kernel source set! Looking for dtb files in $source_path " >&2
   ./tools/dtbToolCM -2 -o tools/dt.img -s 2048 -p $source_path/scripts/dtc/ $source_path/arch/arm/boot/ >config/dtblog.txt
@@ -109,8 +108,6 @@ fi
 
 # Zip the boot image into a flashable zip.
 zips () {
-  mkdir extract
-  mkdir extract/res
   cp tools/base.zip tools/1.zip #&>/dev/null
   cp tools/dt.img extract/res/dt.img
   cp $source_path extract/res/zImage
