@@ -111,7 +111,7 @@ zips () {
   cp tools/base.zip tools/1.zip #&>/dev/null
   cp tools/dt.img extract/res/dt.img
   cp $source_path extract/res/zImage
-  zip -qg tools/1.zip extract/res/*
+  zip -qg tools/1.zip extract/*
   cp tools/1.zip r.zip
   rm -rf tools/1.zip #&>/dev/null
   rm -rf config/enforcing && rm -rf config/permissive
