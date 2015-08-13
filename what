@@ -1,5 +1,5 @@
 #!/bin/bash
-# Clean after a previous run of the script
+# Reset after a previous run of the script
 # Do NOT delete the configuration files in config!
 rm -rf tools/dt.img
 rm -rf .log.txt
@@ -8,6 +8,8 @@ rm -rf renf.img
 rm -rf rper.zip
 rm -rf renf.zip
 [ ! -d config ] && mkdir config
+mod=0
+zippy=0
 
 # Help message to be shown on -h
 halp () {
@@ -15,16 +17,20 @@ halp () {
   echo "	-h 	  -- display this help message"
   echo "	-k [path] -- set zImage path. If not defined, values from -s are"
   echo "		     used."
+  echo "	-m	  -- copy all kernel module .ko files to flash with the zip"
+  echo "		     file. Also enables the -z flag. Requires -s and a full"
+  echo "		     kernel source to find the modules in."
   echo "	-r	  -- remove all configuration files and start anew"
-  echo "	-s [path] -- set kernel source path to be used to look for dtb files"
-  echo "	-p, -e	  -- create permissive or enforcing image. By default, both"
-  echo "		     are created."
+  echo "	-s [path] -- set kernel source path to be used to look for dtb files."
+  echo "		     The path set may be set relative to this script directory."
+  echo "	-p, -e	  -- create permissive or enforcing image. By default, only"
+  echo "		     -p is enabled."
   echo "	-z	  -- create flashable zip file from the zImage and dt.img."
   echo "		     The created zips allow the user to choose whether they"
   echo "		     want a permissive of enforcing image at the time of"
   echo "		     install, and use the native ROM's ramdisk."
   echo " "
-  echo "	Defaults are -p, -e, and -z."
+  echo "	Defaults are -p."
   echo "	Configuration files can be found in .config/"
 }
 
@@ -63,9 +69,9 @@ bootimg () {
   # Check if the zImage path is specified. If not, default to look into kernel source path.
   # If still undefined, exit.
   if [ -f config/k.zImage_path.txt ]; then
-    source_path="$(cat config/k.zImage_path.txt)"
+    zimg="$(cat config/k.zImage_path.txt)"
   elif [ -f config/s.kernelsource_path.txt ]; then
-      source_path="$(cat config/s.kernelsource_path.txt)/arch/arm/boot/zImage"
+    zimg="$(cat config/s.kernelsource_path.txt)/arch/arm/boot/zImage"
   else echo "Path to zImage not defined!"
     exit 1
   fi
@@ -75,14 +81,14 @@ bootimg () {
   elif [ -f config/enforcing ] && [ ! -f config/permissive ]; then
     bootimgenf
   elif [ ! -f config/permissive ] && [ ! -f config/enforcing ]; then
-    bootimgenf && bootimgper
+    bootimgper
   fi
 }
 
 # Functions that run the mkbootimg tool. Use $source_path defined in bootimg.
 # Once the command is sent, check if the images are in place. If not, error out.
 bootimgper () {
-  ./tools/mkbootimg --base 0x00000000 --kernel $source_path \
+  ./tools/mkbootimg --base 0x00000000 --kernel $zimg \
 --ramdisk_offset 0x02000000 --tags_offset 0x01E00000 --pagesize 2048 --cmdline \
 "androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x3b7 ehci-hcd.park=3 androidboot.bootdevice=msm_sdcc.1 vmalloc=300M dwc3.maximum_speed=high dwc3_msm.prop_chg_detect=Y androidboot.selinux=permissive" \
 --ramdisk ramdisk_z3c/ramdisk.cpio.gz --dt tools/dt.img -o rper.img
@@ -94,7 +100,7 @@ exit 1
 fi
 }
 bootimgenf () {
-  ./tools/mkbootimg --base 0x00000000 --kernel $source_path \
+  ./tools/mkbootimg --base 0x00000000 --kernel $zimg \
 --ramdisk_offset 0x02000000 --tags_offset 0x01E00000 --pagesize 2048 --cmdline \
 "androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x3b7 ehci-hcd.park=3 androidboot.bootdevice=msm_sdcc.1 vmalloc=300M dwc3.maximum_speed=high dwc3_msm.prop_chg_detect=Y" \
 --ramdisk ramdisk_z3c/ramdisk.cpio.gz --dt tools/dt.img -o renf.img
@@ -106,11 +112,15 @@ exit 1
 fi
 }
 
+module_copy () {
+  find $source_path -name '*.ko' -exec cp {} extract/modules/ \;
+}
+
 # Zip the boot image into a flashable zip.
 zips () {
   cp tools/base.zip tools/1.zip #&>/dev/null
   cp tools/dt.img extract/res/dt.img
-  cp $source_path extract/res/zImage
+  cp $zimg extract/res/zImage
   zip -qgr tools/1.zip extract/*
   cp tools/1.zip r.zip
   rm -rf tools/1.zip #&>/dev/null
@@ -130,7 +140,7 @@ remove () {
 }
 
 # Check for flags passed
-while getopts ":hrepk:s:z" opt; do
+while getopts ":hrepk:s:mz" opt; do
   case $opt in
     e)
       echo "  Enforcing image selected"
@@ -146,6 +156,10 @@ while getopts ":hrepk:s:z" opt; do
       OPTARG="${OPTARG%/}"
       touch config/k.zImage_path.txt && echo $OPTARG >config/k.zImage_path.txt
       ;;
+    m)
+      mod=1
+      zippy=1
+      ;;
     p)
       echo "  Permissive image selected"
       permissive
@@ -159,7 +173,7 @@ while getopts ":hrepk:s:z" opt; do
       touch config/s.kernelsource_path.txt && echo $OPTARG >config/s.kernelsource_path.txt
       ;;
     z)
-      zips
+      zippy=1
       ;;
     \?)
       echo "!!! Invalid option: -$OPTARG !!!" >&2
@@ -174,8 +188,7 @@ while getopts ":hrepk:s:z" opt; do
 done
 
 # Finally, with all the options set, create the boot image(s) and their zips.
-if [ -d config ]; then
   dtb
   bootimg
-  zips
-fi
+[ $mod = 1 ] && module_copy
+[ $zippy = 1 ] && zips
