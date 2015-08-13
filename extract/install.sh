@@ -78,7 +78,12 @@ mkimg () {
 	$tools/mkbootimg --kernel /tmp/kerneller/res/zImage --ramdisk $work/original.img-ramdisk.gz --cmdline "$(cat work/original.img-cmdline)" --board "$(cat work/original.img-board)" --base "$(cat work/original.img-base)" --pagesize "$(cat work/original.img-pagesize)" --kernel_offset "$(cat work/original.img-kerneloff)" --ramdisk_offset "$(cat work/original.img-ramdiskoff)" --tags_offset "$(cat work/original.img-tagsoff)" --dt /tmp/kerneller/res/dt.img -o /tmp/kerneller/boot.img
 }
 
+modcpy () {
+	cp -f /tmp/kerneller/modules/* /system/lib/modules/
+}
+
 choose
 ramdisk
 cmdline
 mkimg
+modcpy
