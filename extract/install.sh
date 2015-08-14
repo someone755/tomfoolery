@@ -87,3 +87,11 @@ ramdisk
 cmdline
 mkimg
 modcpy
+if [ -f $work/ramdisk/fstab.qcom ]; then
+  ui_print "Done messing around!";
+  ui_print "Writing the new boot.img...";
+  dd if=/tmp/kerneller/boot.img of=/dev/block/platform/msm_sdcc.1/by-name/boot
+else
+  ui_print "Error creating working boot image, aborting install!";
+  ui_print "Are you running a compatible recovery?";
+fi
