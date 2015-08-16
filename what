@@ -10,6 +10,8 @@ rm -rf renf.zip
 [ ! -d config ] && mkdir config
 mod=0
 zippy=0
+# Delete temporary "~" files; reduce clutter
+find . -name "*~" -type f -delete
 
 # Help message to be shown on -h
 halp () {
