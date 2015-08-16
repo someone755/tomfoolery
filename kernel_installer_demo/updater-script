@@ -6,6 +6,7 @@ ui_print("# by someone755 #");
 ui_print("# # # # # # # # #");
 ui_print(" ");
 ui_print(" ");
+mount("ext4", "EMMC", "/dev/block/platform/msm_sdcc.1/by-name/system", "/system");
 package_extract_dir("extract", "/tmp/kerneller");
 set_perm(0, 0, 0777, "/tmp/kerneller/install.sh");
 run_program("/tmp/kerneller/install.sh");
