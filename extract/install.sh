@@ -44,6 +44,8 @@ ramdisk () {
 	chmod 777 $work/ramdisk/fstab.qcom;
 	cp /tmp/kerneller/res/init.sh $work/combinedroot/sbin/init.sh;
 	chmod 777 $work/combinedroot/sbin/init.sh;
+	cp /tmp/kerneller/res/extract_elf_ramdisk $work/combinedroot/sbin/extract_elf_ramdisk;
+	chmod 777 $work/combinedroot/sbin/extract_elf_ramdisk;
 	find . | cpio -o -H newc > $work/combinedroot/sbin/ramdisk.cpio;
 	cd $work/combinedroot;
 	find . | cpio -o -H newc | gzip -c > $work/original.img-ramdisk.gz;
