@@ -42,16 +42,12 @@ ramdisk () {
 	cat $work/combinedroot/sbin/ramdisk.cpio | cpio -i -d;
 # At this point the ramdisk is completely extracted: begin making changes (copy and chmod)
 	cp /tmp/kerneller/res/fstab.qcom $work/ramdisk/fstab.qcom;
-	cp /tmp/kerneller/res/init.qcom.rc $work/ramdisk/init.qcom.rc;
 	cp /tmp/kerneller/res/init.sh $work/combinedroot/sbin/init.sh;
-	cp /tmp/kerneller/res/extract_elf_ramdisk $work/combinedroot/sbin/extract_elf_ramdisk;
 	chmod 777 $work/ramdisk/fstab.qcom;
-	chmod 777 $work/ramdisk/init.qcom.rc;
 	chmod 777 $work/combinedroot/sbin/init.sh;
-	chmod 777 $work/combinedroot/sbin/extract_elf_ramdisk;
-# Changes that are not related to the ramdisk:
+# Changes that are not related to the ramdisk and still need to be reviewed:
 	# rm -rf /system/bin/mpdecision;
-	rm -rf /system/bin/thermanager;
+	# rm -rf /system/bin/thermanager;
 # Repack the ramdisk back completely
 	find . | cpio -o -H newc > $work/combinedroot/sbin/ramdisk.cpio;
 	cd $work/combinedroot;
@@ -91,14 +87,19 @@ modcpy () {
 	cp -f /tmp/kerneller/modules/* /system/lib/modules/
 }
 
+# Functions are all set: Run them in order
 choose
 ramdisk
 cmdline
 mkimg
+# Check for one of the files we copied: if it's there, the boot
+# image was repacked succesfully. If not, flashing it would not
+# allow the device to boot.
 if [ -f $work/ramdisk/fstab.qcom ]; then
   ui_print "Done messing around!";
   ui_print "Writing the new boot.img...";
   dd if=/tmp/kerneller/boot.img of=/dev/block/platform/msm_sdcc.1/by-name/boot
+  ui_print "Copying modules...";
   modcpy
 else
   ui_print "Error creating working boot image, aborting install!";
