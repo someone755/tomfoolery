@@ -135,10 +135,10 @@ fi
 
 # Sign, zipalign, then sign again because of reasons
 signs () {
-  java -Xmx2048m -jar tools/sign/signapk.jar -w tools/sign/testkey.x509.pem tools/sign/testkey.pk8 r_unsig.zip r_signapk.zip
+  java -Xmx2048m -jar tools/sign/signapk.jar -w tools/sign/testkey.x509.pem tools/sign/testkey.pk8 r.zip r_signapk.zip
   rm -rf r.zip
   ./tools/sign/zipadjust r_signapk.zip r_aligned.zip
-  java -Xmx2048m -jar tools/sign/minsignapk.jar tools/sign/testkey.x509.pem tools/sign/testkey.pk8 r_aligned.zip r_sig.zip
+  java -Xmx2048m -jar tools/sign/minsignapk.jar tools/sign/testkey.x509.pem tools/sign/testkey.pk8 r_aligned.zip r.zip
   rm -rf r_signapk.zip r_aligned.zip
 }  
 
