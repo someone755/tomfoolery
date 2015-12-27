@@ -3,14 +3,13 @@
 # Do NOT delete the configuration files in config!
 rm -rf tools/dt.img
 rm -rf .log.txt
-rm -rf rper.img
-rm -rf renf.img
-rm -rf rper.zip
-rm -rf renf.zip
+rm -rf rper.img && rm -rf renf.img
+rm -rf r.zip
+rm -rf config/enforcing && rm -rf config/permissive
 [ ! -d config ] && mkdir config
 mod=0
 zippy=0
-# Delete temporary "~" files; reduce clutter
+# Delete temporary "~" files; reduce clutter, make zip files cleaner
 find . -name "*~" -type f -delete
 
 # Help message to be shown on -h
@@ -25,12 +24,14 @@ halp () {
   echo "	-r	  -- remove all configuration files and start anew"
   echo "	-s [path] -- set kernel source path to be used to look for dtb files."
   echo "		     The path set may be set relative to this script directory."
+  echo "		     You only need to set this once!"
   echo "	-p, -e	  -- create permissive or enforcing image. By default, only"
   echo "		     -p is enabled."
   echo "	-z	  -- create flashable zip file from the zImage and dt.img."
   echo "		     The created zips allow the user to choose whether they"
   echo "		     want a permissive of enforcing image at the time of"
   echo "		     install, and use the native ROM's ramdisk."
+  echo "	-a	  -- zipalign and sign the created zip file (also enables -z flag)."
   echo " "
   echo "	Defaults are -p."
   echo "	Configuration files can be found in .config/"
@@ -120,13 +121,10 @@ module_copy () {
 
 # Zip the boot image into a flashable zip.
 zips () {
-  cp tools/base.zip tools/1.zip #&>/dev/null
   cp tools/dt.img extract/res/dt.img
   cp $zimg extract/res/zImage
-  zip -qgr tools/1.zip extract/*
-  cp tools/1.zip r.zip
-  rm -rf tools/1.zip #&>/dev/null
-  rm -rf config/enforcing && rm -rf config/permissive
+  zip -r r.zip extract/ -x *META-INF*
+  cd extract && zip -r ../r.zip META-INF && cd ..
   if [ -f r.zip ]; then
     echo "  Zip file created successfully"
 else
@@ -135,6 +133,15 @@ else
 fi
 }
 
+# Sign, zipalign, then sign again because of reasons
+signs () {
+  java -Xmx2048m -jar tools/sign/signapk.jar -w tools/sign/testkey.x509.pem tools/sign/testkey.pk8 r_unsig.zip r_signapk.zip
+  rm -rf r.zip
+  ./tools/sign/zipadjust r_signapk.zip r_aligned.zip
+  java -Xmx2048m -jar tools/sign/minsignapk.jar tools/sign/testkey.x509.pem tools/sign/testkey.pk8 r_aligned.zip r_sig.zip
+  rm -rf r_signapk.zip r_aligned.zip
+}  
+
 # Removal script to be run on -r
 remove () {
   rm -rf config/
@@ -142,8 +149,12 @@ remove () {
 }
 
 # Check for flags passed
-while getopts ":hrepk:s:mz" opt; do
+while getopts ":hrepk:s:mza" opt; do
   case $opt in
+    a)
+      zippy=1
+      sign=1
+      ;;
     e)
       echo "  Enforcing image selected"
       enforcing
@@ -194,3 +205,4 @@ done
   bootimg
 [ $mod = 1 ] && module_copy
 [ $zippy = 1 ] && zips
+[ $sign = 1 ] && signs
