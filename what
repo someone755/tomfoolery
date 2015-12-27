@@ -121,9 +121,12 @@ module_copy () {
 
 # Zip the boot image into a flashable zip and sign it
 zips () {
-  ./kerneller/pack
-  mv kerneller/r.zip r.zip
-fi
+  cp $zimg kerneller/extract/res/
+  cd tools/dt.img kerneller/extract/res/
+  cd kerneller
+  ./pack
+  mv r.zip ../r.zip
+  cd ..
 }
 
 # Removal script to be run on -r
@@ -189,4 +192,3 @@ done
   bootimg
 [ $mod = 1 ] && module_copy
 [ $zippy = 1 ] && zips
-[ $sign = 1 ] && signs
