@@ -116,31 +116,15 @@ fi
 }
 
 module_copy () {
-  find $source_path -name '*.ko' -exec cp {} extract/modules/ \;
+  find $source_path -name '*.ko' -exec cp {} kerneller/extract/modules/ \;
 }
 
-# Zip the boot image into a flashable zip.
+# Zip the boot image into a flashable zip and sign it
 zips () {
-  cp tools/dt.img extract/res/dt.img
-  cp $zimg extract/res/zImage
-  zip -r r.zip extract/ -x *META-INF*
-  cd extract && zip -r ../r.zip META-INF && cd ..
-  if [ -f r.zip ]; then
-    echo "  Zip file created successfully"
-else
-    echo "!!! Error creating zip file !!!"
-    exit 1
+  ./kerneller/pack
+  mv kerneller/r.zip r.zip
 fi
 }
-
-# Sign, zipalign, then sign again because of reasons
-signs () {
-  java -Xmx2048m -jar tools/sign/signapk.jar -w tools/sign/testkey.x509.pem tools/sign/testkey.pk8 r.zip r_signapk.zip
-  rm -rf r.zip
-  ./tools/sign/zipadjust r_signapk.zip r_aligned.zip
-  java -Xmx2048m -jar tools/sign/minsignapk.jar tools/sign/testkey.x509.pem tools/sign/testkey.pk8 r_aligned.zip r.zip
-  rm -rf r_signapk.zip r_aligned.zip
-}  
 
 # Removal script to be run on -r
 remove () {

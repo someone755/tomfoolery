@@ -1,1 +1,0 @@
-../extract/install.sh
