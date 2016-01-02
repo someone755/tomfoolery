@@ -122,7 +122,7 @@ module_copy () {
 # Zip the boot image into a flashable zip and sign it
 zips () {
   cp $zimg kerneller/extract/res/
-  cd tools/dt.img kerneller/extract/res/
+  cp tools/dt.img kerneller/extract/res/
   cd kerneller
   ./pack
   mv r.zip ../r.zip
