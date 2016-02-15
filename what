@@ -95,24 +95,24 @@ bootimgper () {
 --ramdisk_offset 0x02000000 --tags_offset 0x01E00000 --pagesize 2048 --cmdline \
 "androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x3b7 ehci-hcd.park=3 androidboot.bootdevice=msm_sdcc.1 vmalloc=300M dwc3.maximum_speed=high dwc3_msm.prop_chg_detect=Y androidboot.selinux=permissive" \
 --ramdisk ramdisk_z3c/ramdisk.cpio.gz --dt tools/dt.img -o rper.img
-if [ -f rper.img ]; then
-echo "  Permissive boot image created successfully"
-else
-echo "!!! Error creating permissive boot image, refer to the error !!!"
-exit 1
-fi
+  if [ -f rper.img ]; then
+    echo "  Permissive boot image created in $(readlink -e rper.img)"
+  else
+    echo "!!! Error creating permissive boot image, refer to the error !!!"
+    exit 1
+  fi
 }
 bootimgenf () {
   ./tools/mkbootimg --base 0x00000000 --kernel $zimg \
 --ramdisk_offset 0x02000000 --tags_offset 0x01E00000 --pagesize 2048 --cmdline \
 "androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x3b7 ehci-hcd.park=3 androidboot.bootdevice=msm_sdcc.1 vmalloc=300M dwc3.maximum_speed=high dwc3_msm.prop_chg_detect=Y" \
 --ramdisk ramdisk_z3c/ramdisk.cpio.gz --dt tools/dt.img -o renf.img
-if [ -f renf.img ]; then
-echo "  Enforcing boot image created successfully"
-else
-echo "!!! Error creating enforcing boot image, refer to the error !!!"
-exit 1
-fi
+  if [ -f renf.img ]; then
+    echo "  Enforcing boot image created in $(readlink -e renf.img)"
+  else
+    echo "!!! Error creating enforcing boot image, refer to the error !!!"
+    exit 1
+  fi
 }
 
 module_copy () {
@@ -127,6 +127,7 @@ zips () {
   ./pack
   mv r.zip ../r.zip
   cd ..
+  echo "  Zip file created in $(readlink -e r.zip)"
 }
 
 # Removal script to be run on -r
@@ -192,3 +193,4 @@ done
   bootimg
 [ $mod = 1 ] && module_copy
 [ $zippy = 1 ] && zips
+
