@@ -1,9 +1,9 @@
-config/
+out/
 *.img
-.*
-*~
 *.zip
 *.ko
+.*
+*~
 zImage
 
 !.gitignore
