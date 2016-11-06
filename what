@@ -10,6 +10,7 @@ ramdisk="ramdisk/ramdisk.cpio.gz"
 # Reset after a previous run of the script
 mkdir out >/dev/null 2>/dev/null
 mod=0
+signage=0
 zippy=0
 enforcing=0
 permissive=0
@@ -28,10 +29,10 @@ halp () {
   echo "		     want a permissive of enforcing image at the time of"
   echo "		     install, and use the native ROM's ramdisk."
   echo "	-m	  -- copy all kernel module .ko files to flash with the zip"
-  echo "		     file. Also enables the '-z' flag. Requires a full"
-  echo "		     kernel source to find the modules in."
-  echo "	-a	  -- zipalign and sign the created zip file (also enables"
-  echo "		     '-z' flag)."
+  echo "		     file. Requires the '-z' flag. Requires a full kernel"
+  echo "		     source to find the modules in."
+  echo "	-a	  -- zipalign and sign the created zip file. Requires the"
+  echo "		     '-z' flag."
 }
 
 # Create a dtb.img from the kernel source path.
@@ -77,7 +78,8 @@ zips () {
   # Include and update the modules if needed
   [ $mod=1 ] && find kerneller/extract/modules/ -name '*.ko' -exec rm -rf {} \; && find $kernelsauce -name '*.ko' -exec cp {} kerneller/extract/modules/ \;
   cd kerneller
-  ./pack
+  ./unsigned_zip
+  [ $signage=1 ] && ./signed_zip
   mv r.zip ../out/r-$(date '+%Y%m%d').zip
   cd ..
   echo "  Zip file created in $(readlink -e out/)"
@@ -87,8 +89,8 @@ zips () {
 while getopts "hdepmza" opt; do
   case $opt in
     a)
+      signage=1
       zippy=1
-      sign=1
       ;;
     d)
       dtb
@@ -105,7 +107,7 @@ while getopts "hdepmza" opt; do
       ;;
     m)
       mod=1
-      zips
+      zippy=1
       ;;
     p)
       echo "  Permissive image selected"
