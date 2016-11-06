@@ -3,8 +3,8 @@
 # Edit this as per your local environment/device!
 cmdline="androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x3b7 ehci-hcd.park=3 androidboot.bootdevice=msm_sdcc.1 vmalloc=300M dwc3.maximum_speed=high dwc3_msm.prop_chg_detect=Y"
 dtbflags="-2 -s 2048"
-kernelsauce=/home/someone/adev/stock/kernel
-zimagepath=$kernelsauce/arch/arm/boot/zImage
+kernelsauce=/home/someone/adev/aosp/kernel
+zimagepath=$kernelsauce/arch/arm/boot/zImage-dtb
 ramdisk="ramdisk/ramdisk.cpio.gz"
 
 # Reset after a previous run of the script
@@ -19,16 +19,19 @@ halp () {
   echo "    options:"
   echo "	-h 	  -- display this help message"
   echo "	-d	  -- compile a dt.img from the source kernel dirctory."
-  echo "	-p, -e	  -- create permissive or enforcing image. By default, only"
-  echo "		     -p is enabled."
-  echo "	-z	  -- create flashable zip file from the zImage and dt.img."
-  echo "		     The created zips allow the user to choose whether they"
+  echo "		     Deprecated in favour of zImage-dtb."
+  echo "	-p, -e	  -- create permissive or enforcing image, respectively."
+  echo "		     Deprecated in favour of highly-modular zips. Requires"
+  echo "		     '-d' to have been run previously."
+  echo "	-z	  -- create flashable zip file from the zImage-dtb. The"
+  echo "		     created zips allow the user to choose whether they"
   echo "		     want a permissive of enforcing image at the time of"
   echo "		     install, and use the native ROM's ramdisk."
   echo "	-m	  -- copy all kernel module .ko files to flash with the zip"
-  echo "		     file. Also enables the -z flag. Requires -s and a full"
+  echo "		     file. Also enables the '-z' flag. Requires a full"
   echo "		     kernel source to find the modules in."
-  echo "	-a	  -- zipalign and sign the created zip file (also enables -z flag)."
+  echo "	-a	  -- zipalign and sign the created zip file (also enables"
+  echo "		     '-z' flag)."
 }
 
 # Create a dtb.img from the kernel source path.
@@ -62,7 +65,7 @@ zimg () {
 # Functions that run the mkbootimg tool. Use $source_path defined in bootimg.
 # Once the command is sent, check if the images are in place. If not, error out.
 bootimg () {
-  ./tools/mkbootimg --base 0x00000000 --kernel $zimagepath --ramdisk_offset 0x02000000 --tags_offset 0x01E00000 --pagesize 2048 --cmdline "$cmdlineexec" --ramdisk $ramdisk --dt out/dt.img -o out/$bootimgout-$(date '+%Y%m%d').img
+  ./tools/mkbootimg --base 0x00000000 --kernel $zimagepath --ramdisk_offset 0x02000000 --tags_offset 0x01E00000 --pagesize 2048 --cmdline "$cmdlineexec" --ramdisk $ramdisk -o out/$bootimgout-$(date '+%Y%m%d').img
   echo "  Boot image created in $(readlink -e out/)"
 }
 
@@ -71,7 +74,6 @@ zips () {
   # Delete temporary "~" files; reduce clutter, make zip files cleaner
   find . -name "*~" -type f -delete
   cp $zimagepath kerneller/extract/res/
-  cp out/dt.img kerneller/extract/res/
   # Include and update the modules if needed
   [ $mod=1 ] && find kerneller/extract/modules/ -name '*.ko' -exec rm -rf {} \; && find $kernelsauce -name '*.ko' -exec cp {} kerneller/extract/modules/ \;
   cd kerneller
