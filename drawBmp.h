@@ -1,4 +1,4 @@
-void drawBmp(int x_res,int y_res, unsigned char pic[x_res][y_res],char fname[]){
+void drawBmp(unsigned char pic[],int x_res,int y_res, char fname[]){
     FILE *f = fopen(fname,"wb");
     if(f==NULL){
         printf("Error opening file!\n");
@@ -74,10 +74,9 @@ void drawBmp(int x_res,int y_res, unsigned char pic[x_res][y_res],char fname[]){
     }
     //write pixel data to file
     if(endPad!=0){
-        char *pPic = pic;
         const char padding[]={0,0,0}; //at most 3 padding bytes are needed
         for(int i=0;i<y_res;i++){
-            fwrite(&pPic[i*y_res],1,x_res,f);
+            fwrite(&pic[i*y_res],1,x_res,f);
             fwrite(padding,1,endPad,f); //pad rows to 4-byte multiples
         }
     } else fwrite(pic,1,x_res*y_res,f);

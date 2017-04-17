@@ -1,4 +1,4 @@
-void drawPnm(int x_res, int y_res, unsigned char arr[x_res][y_res],char fname[],unsigned char mode){
+void drawPnm(unsigned char arr[],int x_res, int y_res, char fname[],unsigned char mode){
     FILE *f = fopen(fname,"wb");
     //FILE is an object type
     //*f points to the newly created "fname" in "wb" (binary write/overwrite) mode
@@ -16,9 +16,7 @@ void drawPnm(int x_res, int y_res, unsigned char arr[x_res][y_res],char fname[],
             fprintf(f,"P6\n%d %d\n255\n",x_res,y_res); //pbm type 6 (24-bit color), resolution (hotizontal, vertical), color step (255)
             for(int i=0;i<y_res;i++){
                 for(int j=0;j<x_res;j++){
-                    fprintf(f,"%c%c%c",(arr[i][j]*3)%256,\
-                                       (arr[i][j]*2)%256,\
-                                        arr[i][j]); //RGB
+                    fprintf(f,"%c%c%c",(arr[i*y_res+j]*3)%256,(arr[i*y_res+j]*2)%256,arr[i*y_res+j]); //RGB
                 }
             }
     }
