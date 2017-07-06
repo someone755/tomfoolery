@@ -1,9 +1,9 @@
 #!/bin/bash
 # Commonly used and long path names/strings
 # Edit this as per your local environment/device!
-cmdline="androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x3b7 ehci-hcd.park=3 androidboot.bootdevice=msm_sdcc.1 vmalloc=300M dwc3.maximum_speed=high dwc3_msm.prop_chg_detect=Y"
+cmdline="androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x37 ehci-hcd.park=3 dwc3.maximum_speed=high dwc3_msm.prop_chg_detect=Y"
 dtbflags="-2 -s 2048"
-kernelsauce=/home/someone/adev/aosp/kernel
+kernelsauce=/home/someone/adev/nougat/kernel
 zimagepath=$kernelsauce/arch/arm/boot/zImage-dtb
 ramdisk="ramdisk/ramdisk.cpio.gz"
 
@@ -79,13 +79,19 @@ zips () {
   cd kerneller
   ./unsigned_zip
   [ $signage=1 ] && ./signed_zip
-  mv r.zip ../out/r-$(date '+%Y%m%d').zip
+  for (( num=1; num<99; num++ ))
+    do 
+      if [ ! -f ../out/r-$(date '+%Y%m%d')-$num.zip ]; then 
+        break
+      fi
+    done
+  mv r.zip ../out/r-$(date '+%Y%m%d')-$num.zip
   cd ..
   echo "  Zip file created in $(readlink -e out/)"
 }
 
 # Check for flags passed
-while getopts "hdepmza" opt; do
+while getopts "hdepmaz" opt; do
   case $opt in
     a)
       signage=1
