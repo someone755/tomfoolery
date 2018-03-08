@@ -73,22 +73,10 @@ void drawBmp(unsigned char pic[],int x_res,int y_res,char fname[]){
         fprintf(f,"%c",arry[i]);
     }
     //write pixel data to file
-    if(endPad!=0){
-        const char padding[]={0,0,0}; //at most 3 padding bytes are needed
-        for(int i=0;i<y_res;i++){
-            fwrite(&pic[i*y_res],1,x_res,f);
-            fwrite(padding,1,endPad,f); //pad rows to 4-byte multiples
-        }
-    } else fwrite(pic,1,x_res*y_res,f);
+    const char padding[]={0,0,0}; //at most 3 padding bytes are needed
+    for(int i=y_res-1;i>=0;i--){
+        fwrite(&pic[i*y_res],1,x_res,f);
+        fwrite(padding,1,endPad,f); //pad rows to 4-byte multiples
+    }
     fclose(f);
-
-    // TODO: always account for vertical mirroring that BMP defaults to
-    /*
-        const char padding[]={0,0,0}; //at most 3 padding bytes are needed
-        for(int i=y_res;i>0;i--){
-            fwrite(&pic[i*y_res],1,x_res,f);
-            fwrite(padding,1,endPad,f); //pad rows to 4-byte multiples
-        }
-    */
-    // But this is slower in most cases that this header file will be used in.
 }
