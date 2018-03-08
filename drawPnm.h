@@ -9,7 +9,6 @@ void drawPnm(unsigned char arr[],int x_res, int y_res, char fname[],unsigned cha
     switch(mode){
         case 0: //mode 0 for grayscale
             fprintf(f,"P5\n%d %d\n255\n",x_res,y_res); //pbm type 5 (8-bit grayscale), resolution (hotizontal, vertical), color step (255)
-            printf("hello");
             fwrite(arr,1,x_res*y_res,f);
             break;
         case 1: //mode 1 for color
