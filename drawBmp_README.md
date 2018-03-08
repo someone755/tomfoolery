@@ -90,19 +90,20 @@ We'll begin our file with the header. This can be achieved using a loop statemen
 ```
 for(int i=0;i<54+256*4;i++) fprintf(f,"%c",arry[i]);
 ```
-We continue by writing the pixel data array. If the number of horizontal pixels in the image is a number divisible by 4, then we can quickly and easily write the data to the file using fwrite:
-```
-fwrite(pic,1,x_res*y_res,f);
-```
-If this is not the case (i.e. if `x_res % 4` does not return 0), we must account for another of the BMP file format's specifics: Each pixel row must be padded to have a size which is a multiple of the number 4. The following code snippet is scattered throughout the library to allow for better performance, but the end result is the same as if were written like this:
+We continue by writing the pixel data array. Here, two things must be considered: First, each horizontal pixel row must be padded to have a size which is a multiple of the number 4. The following code snippet is scattered throughout the library to allow for better performance, but for easier analysis we will write it as if it were one chunk of code:
 ```
 if(x_res%4==0) endPad=0;
 else endPad=4-(x_res%4);
 const char padding[]={0,0,0};
 ```
-The above sequence determines whether row padding is necessary. If it is, the number of padding bytes is calculated, and an array with three zeroes is declared. The two variables are going to be used as the array and array length parameters when we call the `fwrite` function:
+The above code snippet determines whether row padding is necessary. If it is, the number of padding bytes is calculated, and an array with three zeroes is declared. The two variables are going to be used as the array and array length parameters when we call the `fwrite` function each time after drawing one horizontal line of our pixel data array:
 ```
-for(int i=0;i<y_res;i++){
+  fwrite(&pic[i*y_res],1,x_res,f);
+  fwrite(padding,1,endPad,f);
+```
+Secondly, it must be taken into account that, if we were to simply write our pixel data array as we are used (i.e. left-to-right, and top-to-bottom), the image our program would output would be flipped horizontally. To avoid this, we must adapt the program as follows; Note the for loop's init, condition, and increment statements:
+```
+for(int i=y_res-1;i>=0;i--){
   fwrite(&pic[i*y_res],1,x_res,f);
   fwrite(padding,1,endPad,f);
 }
